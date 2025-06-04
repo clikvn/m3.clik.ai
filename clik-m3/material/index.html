@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./vars.css">
+  <link rel="stylesheet" href="./style.css">
+  
+  
+  <style>
+   a,
+   button,
+   input,
+   select,
+   h1,
+   h2,
+   h3,
+   h4,
+   h5,
+   * {
+       box-sizing: border-box;
+       margin: 0;
+       padding: 0;
+       border: none;
+       text-decoration: none;
+       background: none;
+   
+       -webkit-font-smoothing: antialiased;
+   }
+   
+   menu, ol, ul {
+       list-style-type: none;
+       margin: 0;
+       padding: 0;
+   }
+
+   body {
+     margin: 0;
+     padding: 0;
+     width: 100vw;
+     height: 100vh;
+     overflow: hidden;
+   }
+
+   .moodboard {
+     position: relative;
+     width: 100%;
+     height: 100%;
+     overflow: hidden;
+   }
+
+   /* Sticky Navigation */
+   .app-bar {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     width: 100%;
+     height: 48px;
+     z-index: 1000;
+     background: var(--md-sys-color-surface);
+     display: flex;
+     align-items: center;
+     padding: 0 16px;
+   }
+
+   .app-bar .text-content {
+     flex: 1;
+     margin: 0 16px;
+   }
+
+   /* Sticky Hero Image */
+   .hero-section {
+     position: fixed;
+     top: 0;
+     left: 0;
+     right: 0;
+     width: 100%;
+     height: 40vh;
+     z-index: 900;
+     margin-top: 0;
+   }
+
+   .hero-section .image {
+     width: 100%;
+     height: 100%;
+     object-fit: cover;
+     display: block;
+   }
+
+   /* Bottom Sheet */
+   .bottom-sheet {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     width: 100%;
+     height: 60vh;
+     background: var(--md-sys-color-surface);
+     border-radius: 28px 28px 0 0;
+     z-index: 1000;
+     overflow-y: auto;
+     box-shadow: var(--md-sys-elevation-level3);
+     transition: height 0.3s ease-in-out;
+   }
+
+   .bottom-sheet.expanded {
+     height: 90vh;
+   }
+
+   .divider {
+     width: 100%;
+     padding: 8px 0;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+   }
+
+   .progress-bar {
+     width: 32px;
+     height: 4px;
+     background: var(--md-sys-color-surface-variant);
+     border-radius: 2px;
+   }
+
+   .bottom-sheet-content {
+     width: 100%;
+     background-color: white;
+   }
+
+   /* Content Sections */
+   .content2, .content4, .content9, .content11 {
+     width: 100%;
+   }
+
+   .gallery {
+     width: 100%;
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+     gap: 16px;
+     padding: 16px 0;
+   }
+
+   .material-item, .color-item, .color-item2 {
+     width: 100%;
+   }
+
+   .material-image {
+     width: 100%;
+     height: auto;
+     object-fit: cover;
+   }
+
+   /* Style Selection */
+   .content2 {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     width: 100%;
+   }
+
+   .content4 {
+     width: 100%;
+   }
+
+   .content5 {
+     width: 100%;
+     margin-bottom: 16px;
+   }
+
+   /* Color Palette */
+   .list {
+     width: 100%;
+   }
+
+   .item {
+     width: 100%;
+     display: flex;
+     align-items: center;
+     gap: 16px;
+     padding: 8px 0;
+   }
+
+   .items {
+     display: flex;
+     gap: 8px;
+     flex: 1;
+     justify-content: flex-end;
+   }
+
+   /* Materials Section */
+   .content9 {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     width: 100%;
+   }
+
+   .content11 {
+     width: 100%;
+   }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const bottomSheet = document.querySelector('.bottom-sheet');
+      let startY;
+      let currentY;
+      
+      bottomSheet.addEventListener('touchstart', function(e) {
+        startY = e.touches[0].clientY;
+      });
+      
+      bottomSheet.addEventListener('touchmove', function(e) {
+        currentY = e.touches[0].clientY;
+        const diff = startY - currentY;
+        
+        if (diff > 50) {
+          bottomSheet.classList.add('expanded');
+        } else if (diff < -50) {
+          bottomSheet.classList.remove('expanded');
+        }
+      });
+    });
+  </script>
+  <title>Moodboard - Material Design 3</title>
+</head>
+<body>
+  <div class="moodboard">
+    <!-- Sticky Navigation -->
+    <header class="app-bar" role="banner">
+      <button class="leading-icon" aria-label="Menu">
+        <div class="content13">
+          <div class="state-layer3">
+            <img class="icon5" src="icon4.svg" alt="Menu icon" />
+          </div>
+        </div>
+      </button>
+      <div class="text-content">
+        <h1 class="headline">Moodboard</h1>
+      </div>
+      <button class="button" aria-label="AI Restyle">
+        <div class="content14">
+          <div class="state-layer2">
+            <img class="icon6" src="icon5.svg" alt="AI Restyle icon" />
+            <span class="label2">AI Restyle</span>
+          </div>
+        </div>
+      </button>
+    </header>
+
+    <!-- Sticky Hero Image -->
+    <section class="hero-section" aria-label="Hero image">
+      <img
+        class="image"
+        style="
+          background: url(image0.png) center;
+          background-size: cover;
+          background-repeat: no-repeat;
+        "
+        src="image0.png"
+        alt="Moodboard hero image"
+      />
+    </section>
+
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet">
+      <div class="bottom-sheet-content">
+        <!-- Progress Section -->
+        <section class="progress-section" aria-label="Progress">
+          <div class="divider">
+            <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </section>
+
+        <!-- Style Selection Section -->
+        <section class="style-section" aria-label="Style selection">
+          <div class="content2">
+            <div class="content3">
+              <div class="style">Style: Minimalist</div>
+            </div>
+            <button class="dropdown-button" aria-label="Toggle style options">
+              <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" />
+            </button>
+          </div>
+
+          <!-- Style Options -->
+          <div class="content4">
+            <!-- Selected Style -->
+            <article class="content5 selected-style">
+              <div class="content6">
+                <div class="content7">
+                  <h2 class="title">Minimalist</h2>
+                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+                </div>
+                <p class="description">
+                  The Japandi moodboard is presented, featuring a serene blend of
+                  Japanese minimalism with Scandinavian functionality. The color
+                  palette includes Oyster White, Warm Grey, Cool Grey, and Taupe.
+                </p>
+              </div>
+
+              <!-- Color Palette Section -->
+              <div class="content8">
+                <h3 class="color-palette-label">Color palette:</h3>
+                <ul class="list" role="list">
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon" src="icon0.svg" alt="Soft Neutrals" />
+                        </div>
+                      </div>
+                    </div>
+                    <span class="soft-neutrals">Soft Neutrals</span>
+                    <div class="items">
+                      <div class="ellipse-1"></div>
+                      <div class="ellipse-2"></div>
+                      <div class="ellipse-3"></div>
+                      <div class="ellipse-4"></div>
+                    </div>
+                  </li>
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon2" src="icon1.svg" alt="Scandinavian Breeze" />
+                        </div>
+                      </div>
+                    </div>
+                    <span class="scadinavian-breeze">Scandinavian Breeze</span>
+                    <div class="items">
+                      <div class="ellipse-12"></div>
+                      <div class="ellipse-22"></div>
+                      <div class="ellipse-32"></div>
+                      <div class="ellipse-42"></div>
+                    </div>
+                  </li>
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon3" src="icon2.svg" alt="Scandinavian Breeze 2" />
+                        </div>
+                      </div>
+                    </div>
+                    <span class="scadinavian-breeze-2">Scandinavian Breeze 2</span>
+                    <div class="items">
+                      <div class="ellipse-13"></div>
+                      <div class="ellipse-23"></div>
+                      <div class="ellipse-33"></div>
+                      <div class="ellipse-43"></div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </article>
+
+            <!-- Other Style Options -->
+            <article class="content5">
+              <div class="content6">
+                <div class="content7">
+                  <h2 class="style-name">Industrial</h2>
+                </div>
+              </div>
+            </article>
+
+            <article class="content5">
+              <div class="content6">
+                <div class="content7">
+                  <h2 class="style-name">Mid-Century Modern</h2>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Palette & Materials Section -->
+        <section class="palette-materials-section" aria-label="Palette and materials">
+          <div class="content9">
+            <div class="content3">
+              <h2 class="section-title">Palette & Materials</h2>
+            </div>
+            <button class="button" aria-label="Save changes">
+              <div class="content10">
+                <div class="state-layer2">
+                  <img class="icon4" src="icon3.svg" alt="Save icon" />
+                  <span class="label">Save</span>
+                </div>
+              </div>
+            </button>
+            <button class="dropdown-button" aria-label="Toggle palette options">
+              <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" />
+            </button>
+          </div>
+
+          <!-- Color Gallery -->
+          <div class="content11">
+            <div class="gallery" role="list" aria-label="Color palette">
+              <div class="color-item">
+                <div class="color-swatch"></div>
+                <div class="color-code">#FFFFFF</div>
+              </div>
+              <div class="color-item2">
+                <div class="color-swatch2"></div>
+                <div class="color-code2">#808080</div>
+              </div>
+              <div class="color-item2">
+                <div class="color-swatch3"></div>
+                <div class="color-code3">#F5F5DC</div>
+              </div>
+              <div class="color-item2">
+                <div class="color-swatch4"></div>
+                <div class="color-code2">#000000</div>
+              </div>
+            </div>
+
+            <!-- Materials Section -->
+            <div class="content12">
+              <h3 class="materials-label">Materials</h3>
+            </div>
+
+            <!-- Materials Gallery -->
+            <div class="gallery" role="list" aria-label="Materials">
+              <article class="material-item">
+                <img class="material-image" src="material-image0.png" alt="Panel material" />
+                <div class="material-code">#mcode</div>
+                <div class="recommended">
+                  <span class="material-type">Panel</span>
+                </div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image1.png" alt="Paint material" />
+                <div class="recommended">
+                  <span class="material-type">Paint</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image2.png" alt="Curtain material" />
+                <div class="recommended">
+                  <span class="material-type">Curtain</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image3.png" alt="Flooring material" />
+                <div class="recommended">
+                  <span class="material-type">Flooring</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+            </div>
+
+            <!-- Additional Materials Gallery -->
+            <div class="gallery" role="list" aria-label="Additional materials">
+              <article class="material-item">
+                <img class="material-image" src="material-image4.png" alt="Panel material" />
+                <div class="material-code">#mcode</div>
+                <div class="recommended">
+                  <span class="material-type">Panel</span>
+                </div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image5.png" alt="Paint material" />
+                <div class="recommended">
+                  <span class="material-type">Paint</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image6.png" alt="Curtain material" />
+                <div class="recommended">
+                  <span class="material-type">Curtain</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+              <article class="material-item">
+                <img class="material-image" src="material-image7.png" alt="Flooring material" />
+                <div class="recommended">
+                  <span class="material-type">Flooring</span>
+                </div>
+                <div class="material-code">#mcode</div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
