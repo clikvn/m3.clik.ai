@@ -170,24 +170,49 @@
 
    .content4 {
      width: 100%;
+     display: flex;
+     flex-direction: column;
+     gap: 12px;
    }
 
    .content5 {
-     width: 100%;
-     margin-bottom: 16px;
+     background: var(--white, #ffffff);
+     border-radius: 8px;
+     border-style: solid;
+     border-color: var(--zinc-200, #e4e4e7);
+     border-width: 1px;
+     padding: 12px;
+     display: flex;
+     flex-direction: column;
+     gap: 4px;
+     align-items: flex-start;
+     justify-content: flex-start;
+     align-self: stretch;
+     flex-shrink: 0;
+     position: relative;
    }
 
    /* Color Palette */
    .list {
-     width: 100%;
+     display: flex;
+     flex-direction: column;
+     gap: 12px;
+     align-items: flex-start;
+     justify-content: flex-start;
+     align-self: stretch;
+     flex-shrink: 0;
+     position: relative;
    }
 
    .item {
-     width: 100%;
      display: flex;
+     flex-direction: row;
+     gap: 8px;
      align-items: center;
-     gap: 16px;
-     padding: 8px 0;
+     justify-content: flex-start;
+     align-self: stretch;
+     flex-shrink: 0;
+     position: relative;
    }
 
    .items {
@@ -207,6 +232,52 @@
 
    .content11 {
      width: 100%;
+   }
+
+   /* Add expand/collapse logic for style options */
+   .content4 .content5 {
+     cursor: pointer;
+     overflow: hidden;
+     transition: max-height 0.3s cubic-bezier(.4,0,.2,1), padding 0.3s cubic-bezier(.4,0,.2,1);
+     max-height: 48px;
+     padding-top: 12px;
+     padding-bottom: 12px;
+   }
+   .content4 .content5.expanded {
+     max-height: 500px;
+     padding-bottom: 16px;
+   }
+   .content4 .content5 .description,
+   .content4 .content5 .content8 {
+     display: none;
+   }
+   .content4 .content5.expanded .description,
+   .content4 .content5.expanded .content8 {
+     display: block;
+   }
+
+   .content5 .check-icon {
+     display: none;
+   }
+   .content5.expanded .check-icon {
+     display: inline-block;
+   }
+
+   .color-palette-label {
+     color: var(--m3-sys-light-on-surface, #191c20);
+     text-align: left;
+     font-family: var(--m3-title-small-font-family, "Roboto-Medium", sans-serif);
+     font-size: var(--m3-title-small-font-size, 14px);
+     line-height: var(--m3-title-small-line-height, 20px);
+     letter-spacing: var(--m3-title-small-letter-spacing, 0.1px);
+     font-weight: var(--m3-title-small-font-weight, 500);
+     position: relative;
+     text-overflow: ellipsis;
+     overflow: hidden;
+     white-space: nowrap;
+     padding-bottom: 12px;
+     padding-top: 12px;
+
    }
   </style>
   <script>
@@ -229,6 +300,50 @@
           bottomSheet.classList.remove('expanded');
         }
       });
+
+      // Color palette radio selection logic
+      const paletteItems = document.querySelectorAll('.list .item');
+      const iconAlts = Array.from(paletteItems).map(itm => {
+        const icon = itm.querySelector('img');
+        return icon ? icon.alt.replace(/ \(selected\)| \(not selected\)/g, '') : '';
+      });
+      paletteItems.forEach((item, idx) => {
+        item.addEventListener('click', function() {
+          paletteItems.forEach((itm, i) => {
+            const icon = itm.querySelector('img');
+            if (!icon) return;
+            if (i === idx) {
+              icon.src = 'icon0.svg';
+              icon.alt = iconAlts[i] + ' (selected)';
+              itm.classList.add('selected');
+            } else {
+              icon.src = 'icon1.svg';
+              icon.alt = iconAlts[i] + ' (not selected)';
+              itm.classList.remove('selected');
+            }
+          });
+        });
+      });
+
+      // Style selection logic with expand/collapse
+      const styleOptions = document.querySelectorAll('.content4 .content5');
+      const styleLabel = document.querySelector('.style-section .style');
+      styleOptions.forEach(option => {
+        option.addEventListener('click', function() {
+          styleOptions.forEach(opt => opt.classList.remove('expanded'));
+          option.classList.add('expanded');
+          const nameEl = option.querySelector('.title, .style-name');
+          if (nameEl && styleLabel) {
+            styleLabel.textContent = 'Style: ' + nameEl.textContent;
+          }
+        });
+      });
+
+      // On load, expand Minimalist by default
+      if (styleOptions.length > 0) {
+        styleOptions.forEach(opt => opt.classList.remove('expanded'));
+        styleOptions[0].classList.add('expanded');
+      }
     });
   </script>
   <title>Moodboard - Material Design 3</title>
@@ -317,11 +432,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon" src="icon0.svg" alt="Soft Neutrals" />
+                          <img class="icon" src="icon0.svg" alt="Soft Neutrals (selected)" />
                         </div>
                       </div>
                     </div>
-                    <span class="soft-neutrals">Soft Neutrals</span>
+                    <div class="soft-neutrals">Soft Neutrals</div>
                     <div class="items">
                       <div class="ellipse-1"></div>
                       <div class="ellipse-2"></div>
@@ -333,11 +448,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon2" src="icon1.svg" alt="Scandinavian Breeze" />
+                          <img class="icon2" src="icon1.svg" alt="Scandinavian Breeze (not selected)" />
                         </div>
                       </div>
                     </div>
-                    <span class="scadinavian-breeze">Scandinavian Breeze</span>
+                    <div class="scadinavian-breeze">Scandinavian Breeze</div>
                     <div class="items">
                       <div class="ellipse-12"></div>
                       <div class="ellipse-22"></div>
@@ -349,11 +464,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon3" src="icon2.svg" alt="Scandinavian Breeze 2" />
+                          <img class="icon3" src="icon2.svg" alt="Scandinavian Breeze 2 (not selected)" />
                         </div>
                       </div>
                     </div>
-                    <span class="scadinavian-breeze-2">Scandinavian Breeze 2</span>
+                    <div class="scadinavian-breeze-2">Scandinavian Breeze 2</div>
                     <div class="items">
                       <div class="ellipse-13"></div>
                       <div class="ellipse-23"></div>
@@ -370,6 +485,61 @@
               <div class="content6">
                 <div class="content7">
                   <h2 class="style-name">Industrial</h2>
+                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+                </div>
+                <p class="description">The Industrial moodboard is presented, featuring a raw blend of exposed materials and utilitarian design. The color palette includes Charcoal, Concrete Grey, Rust, and Steel Blue.</p>
+                <div class="content8">
+                  <h3 class="color-palette-label">Color palette:</h3>
+                  <ul class="list" role="list">
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon" src="icon0.svg" alt="Urban Greys (selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="soft-neutrals">Urban Greys</div>
+                      <div class="items">
+                        <div class="ellipse-1"></div>
+                        <div class="ellipse-2"></div>
+                        <div class="ellipse-3"></div>
+                        <div class="ellipse-4"></div>
+                      </div>
+                    </li>
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon2" src="icon1.svg" alt="Rustic Metals (not selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="scadinavian-breeze">Rustic Metals</div>
+                      <div class="items">
+                        <div class="ellipse-12"></div>
+                        <div class="ellipse-22"></div>
+                        <div class="ellipse-32"></div>
+                        <div class="ellipse-42"></div>
+                      </div>
+                    </li>
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon3" src="icon1.svg" alt="Steel Blue (not selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="scadinavian-breeze-2">Steel Blue</div>
+                      <div class="items">
+                        <div class="ellipse-13"></div>
+                        <div class="ellipse-23"></div>
+                        <div class="ellipse-33"></div>
+                        <div class="ellipse-43"></div>
+                      </div>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </article>
@@ -378,6 +548,61 @@
               <div class="content6">
                 <div class="content7">
                   <h2 class="style-name">Mid-Century Modern</h2>
+                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+                </div>
+                <p class="description">The Mid-Century Modern moodboard is presented, featuring a timeless blend of organic forms and bold colors. The color palette includes Teal, Mustard, Walnut, and Cream.</p>
+                <div class="content8">
+                  <h3 class="color-palette-label">Color palette:</h3>
+                  <ul class="list" role="list">
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon" src="icon0.svg" alt="Retro Teal (selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="soft-neutrals">Retro Teal</div>
+                      <div class="items">
+                        <div class="ellipse-1"></div>
+                        <div class="ellipse-2"></div>
+                        <div class="ellipse-3"></div>
+                        <div class="ellipse-4"></div>
+                      </div>
+                    </li>
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon2" src="icon1.svg" alt="Mustard Yellow (not selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="scadinavian-breeze">Mustard Yellow</div>
+                      <div class="items">
+                        <div class="ellipse-12"></div>
+                        <div class="ellipse-22"></div>
+                        <div class="ellipse-32"></div>
+                        <div class="ellipse-42"></div>
+                      </div>
+                    </li>
+                    <li class="item">
+                      <div class="radio-buttons">
+                        <div class="container">
+                          <div class="state-layer">
+                            <img class="icon3" src="icon1.svg" alt="Walnut (not selected)" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="scadinavian-breeze-2">Walnut</div>
+                      <div class="items">
+                        <div class="ellipse-13"></div>
+                        <div class="ellipse-23"></div>
+                        <div class="ellipse-33"></div>
+                        <div class="ellipse-43"></div>
+                      </div>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </article>
