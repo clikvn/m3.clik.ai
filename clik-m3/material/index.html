@@ -173,6 +173,7 @@
      display: flex;
      flex-direction: column;
      gap: 12px;
+     padding-bottom: 16px;
    }
 
    .content5 {
@@ -279,71 +280,253 @@
      padding-top: 12px;
 
    }
+
+   /* Color Gallery */
+   .content11 {
+     width: 100%;
+   }
+
+   .gallery {
+     width: 100%;
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+     gap: 16px;
+     padding: 0 !important;
+   }
+
+   /* Color Gallery Specific Styles */
+   .content11 .gallery {
+     display: grid !important;
+     grid-template-columns: repeat(4, 1fr) !important;
+     gap: 16px !important;
+     padding: 0 !important;
+     box-sizing: border-box !important;
+   }
+
+   /* Parent containers for each color block */
+   .content11 .gallery > .color-item,
+   .content11 .gallery > .color-item2 {
+     width: 100% !important;
+     aspect-ratio: 1 / 1 !important; /* Maintain square shape */
+     position: relative !important;  /* Establishes positioning context for children */
+     box-sizing: border-box !important;
+     margin: 0 !important;
+     padding: 0 !important;
+     overflow: hidden !important; /* Prevents children from spilling out if misconfigured */
+   }
+
+   /* The actual colored square - fills its parent */
+   .content11 .gallery > .color-item > .color-swatch,
+   .content11 .gallery > .color-item2 > .color-swatch2,
+   .content11 .gallery > .color-item2 > .color-swatch3,
+   .content11 .gallery > .color-item2 > .color-swatch4 {
+     width: 100% !important;
+     height: 100% !important;
+     border-radius: 8px !important;
+     box-sizing: border-box !important;
+     position: absolute !important; /* Positioned within the relative parent */
+     top: 0 !important;
+     left: 0 !important;
+   }
+
+   /* The text label for the color code */
+   .content11 .gallery > .color-item > .color-code,
+   .content11 .gallery > .color-item2 > .color-code2,
+   .content11 .gallery > .color-item2 > .color-code3 {
+     position: absolute !important; /* Positioned relative to .color-item or .color-item2 */
+     bottom: 4px !important;       /* 4px from the bottom of the parent */
+     left: 0 !important;           /* Stretch from left edge... */
+     right: 0 !important;          /* ...to right edge of the parent */
+     
+     height: 16px !important;        /* Fixed height for the text area */
+     line-height: 16px !important;   /* Vertically center single-line text in this height */
+     text-align: center !important;  /* Horizontally center the text content */
+     
+     color: var(--md-sys-color-on-surface, #1C1B1F) !important; /* Default to a visible color */
+     font-family: 'Roboto', sans-serif !important; /* Consistent font */
+     font-size: 14px !important;
+     font-weight: 500 !important;
+     
+     /* Aggressive Resets to avoid external interference */
+     margin: 0 !important;
+     padding: 0 !important;
+     border: none !important;
+     background: none !important; /* Ensure no background is hiding it */
+     transform: none !important; 
+     box-sizing: border-box !important;
+     z-index: 10 !important; /* Ensure it is on top of the color swatch */
+     overflow: hidden !important; /* Clip text if it somehow overflows fixed height */
+     white-space: nowrap !important; /* Keep text on a single line */
+   }
   </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const bottomSheet = document.querySelector('.bottom-sheet');
       let startY;
-      let currentY;
       
-      bottomSheet.addEventListener('touchstart', function(e) {
-        startY = e.touches[0].clientY;
-      });
-      
-      bottomSheet.addEventListener('touchmove', function(e) {
-        currentY = e.touches[0].clientY;
-        const diff = startY - currentY;
+      if (bottomSheet) { 
+        bottomSheet.addEventListener('touchstart', function(e) {
+          startY = e.touches[0].clientY;
+        });
         
-        if (diff > 50) {
-          bottomSheet.classList.add('expanded');
-        } else if (diff < -50) {
-          bottomSheet.classList.remove('expanded');
-        }
-      });
+        bottomSheet.addEventListener('touchmove', function(e) {
+          const currentYMove = e.touches[0].clientY;
+          const diff = startY - currentYMove;
+          
+          if (diff > 50) {
+            bottomSheet.classList.add('expanded');
+          } else if (diff < -50) {
+            bottomSheet.classList.remove('expanded');
+          }
+        });
+      }
 
-      // Color palette radio selection logic
-      const paletteItems = document.querySelectorAll('.list .item');
-      const iconAlts = Array.from(paletteItems).map(itm => {
-        const icon = itm.querySelector('img');
-        return icon ? icon.alt.replace(/ \(selected\)| \(not selected\)/g, '') : '';
-      });
-      paletteItems.forEach((item, idx) => {
-        item.addEventListener('click', function() {
-          paletteItems.forEach((itm, i) => {
-            const icon = itm.querySelector('img');
+      function rgbToHex(rgbString) {
+        if (!rgbString || typeof rgbString !== 'string') return rgbString;
+        const match = rgbString.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+        if (!match) {
+          return rgbString; 
+        }
+      
+        function hexComponent(x) {
+          const hexValue = parseInt(x, 10).toString(16);
+          return hexValue.length === 1 ? "0" + hexValue : hexValue;
+        }
+        return "#" + hexComponent(match[1]) + hexComponent(match[2]) + hexComponent(match[3]).toUpperCase();
+      }
+
+      function selectPaletteOptionInGroup(paletteToSelect, groupContainer) {
+        if (!paletteToSelect || !groupContainer) return;
+        const siblingPaletteOptions = groupContainer.querySelectorAll('.list .item');
+        
+        const iconAltsInThisGroup = Array.from(siblingPaletteOptions).map(itm => {
+            const labelElement = itm.querySelector('div:not([class])'); 
+            const baseAlt = labelElement ? labelElement.textContent.trim() : 'color palette';
+            return baseAlt;
+        });
+
+        siblingPaletteOptions.forEach((sibling, idx) => {
+            const icon = sibling.querySelector('img.icon, img.icon2, img.icon3'); 
             if (!icon) return;
-            if (i === idx) {
-              icon.src = 'icon0.svg';
-              icon.alt = iconAlts[i] + ' (selected)';
-              itm.classList.add('selected');
+            if (sibling === paletteToSelect) {
+                icon.src = 'icon0.svg'; 
+                icon.alt = (iconAltsInThisGroup[idx] || 'Selected palette') + ' (selected)';
+                sibling.classList.add('selected');
             } else {
-              icon.src = 'icon1.svg';
-              icon.alt = iconAlts[i] + ' (not selected)';
-              itm.classList.remove('selected');
+                icon.src = 'icon1.svg'; 
+                icon.alt = (iconAltsInThisGroup[idx] || 'Palette option') + ' (not selected)';
+                sibling.classList.remove('selected');
             }
+        });
+      }
+
+      function updateMainColorGallery() {
+        const activeStyleOption = document.querySelector('.content4 .content5.expanded');
+        if (!activeStyleOption) {
+            return;
+        }
+
+        const selectedPaletteInActiveStyle = activeStyleOption.querySelector('.list .item.selected');
+        if (!selectedPaletteInActiveStyle) {
+            return;
+        }
+
+        const paletteEllipses = selectedPaletteInActiveStyle.querySelectorAll('.items > div[class^="ellipse-"]');
+        const mainGalleryDiv = document.querySelector('.content11 .gallery');
+        
+        if (!mainGalleryDiv) {
+          return;
+        }
+        
+        const galleryItems = Array.from(mainGalleryDiv.children)
+                                 .filter(child => child.classList.contains('color-item') || child.classList.contains('color-item2'));
+
+        if (paletteEllipses.length < 4) {
+          return;
+        }
+         if (galleryItems.length < 4) {
+          return;
+        }
+
+        for (let i = 0; i < 4; i++) {
+          if (!paletteEllipses[i] || !galleryItems[i]) {
+              continue;
+          }
+
+          const ellipseColorRGB = window.getComputedStyle(paletteEllipses[i]).backgroundColor;
+          const ellipseColorHEX = rgbToHex(ellipseColorRGB);
+          
+          const swatchElement = galleryItems[i].querySelector('div[class*="color-swatch"]'); 
+          const codeElement = galleryItems[i].querySelector('div[class*="color-code"]');   
+
+          if (swatchElement) {
+              swatchElement.style.backgroundColor = ellipseColorRGB; 
+          } 
+          if (codeElement) {
+              codeElement.textContent = ellipseColorHEX;
+          } 
+        }
+      }
+
+      const styleChoiceElements = document.querySelectorAll('.content4 .content5');
+      const styleLabel = document.querySelector('.style-section .style'); 
+
+      styleChoiceElements.forEach(styleChoice => {
+        styleChoice.addEventListener('click', function(event) {
+          if (event.target.closest('.list .item')) {
+              return;
+          }
+
+          const isAlreadyExpanded = this.classList.contains('expanded');
+          
+          styleChoiceElements.forEach(opt => {
+              if (opt !== this) opt.classList.remove('expanded');
           });
+          this.classList.add('expanded');
+
+          const nameEl = this.querySelector('.title, .style-name');
+          if (nameEl && styleLabel) {
+            styleLabel.textContent = 'Style: ' + nameEl.textContent.trim();
+          }
+
+          const firstPaletteInThisStyle = this.querySelector('.list .item');
+          if (firstPaletteInThisStyle) {
+            selectPaletteOptionInGroup(firstPaletteInThisStyle, this); 
+          }
+          updateMainColorGallery();
         });
       });
-
-      // Style selection logic with expand/collapse
-      const styleOptions = document.querySelectorAll('.content4 .content5');
-      const styleLabel = document.querySelector('.style-section .style');
-      styleOptions.forEach(option => {
-        option.addEventListener('click', function() {
-          styleOptions.forEach(opt => opt.classList.remove('expanded'));
-          option.classList.add('expanded');
-          const nameEl = option.querySelector('.title, .style-name');
-          if (nameEl && styleLabel) {
-            styleLabel.textContent = 'Style: ' + nameEl.textContent;
+      
+      const allPaletteOptionElements = document.querySelectorAll('.content4 .content5 .list .item');
+      allPaletteOptionElements.forEach((paletteOptionElement) => {
+        paletteOptionElement.addEventListener('click', function() {
+          const parentStyleContainer = this.closest('.content5');
+          if (parentStyleContainer) {
+            selectPaletteOptionInGroup(this, parentStyleContainer);
+            updateMainColorGallery();
           }
         });
       });
 
-      // On load, expand Minimalist by default
-      if (styleOptions.length > 0) {
-        styleOptions.forEach(opt => opt.classList.remove('expanded'));
-        styleOptions[0].classList.add('expanded');
+
+      if (styleChoiceElements.length > 0) {
+        const defaultStyleOption = styleChoiceElements[0]; 
+        
+        styleChoiceElements.forEach(opt => opt.classList.remove('expanded'));
+        defaultStyleOption.classList.add('expanded');
+        
+        const nameElDefault = defaultStyleOption.querySelector('.title, .style-name');
+        if (nameElDefault && styleLabel) {
+           styleLabel.textContent = 'Style: ' + nameElDefault.textContent.trim();
+        }
+
+        const firstPaletteInDefaultStyle = defaultStyleOption.querySelector('.list .item');
+        if (firstPaletteInDefaultStyle) {
+          selectPaletteOptionInGroup(firstPaletteInDefaultStyle, defaultStyleOption);
+        }
+        updateMainColorGallery(); 
       }
+
     });
   </script>
   <title>Moodboard - Material Design 3</title>
