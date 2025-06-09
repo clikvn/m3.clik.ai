@@ -435,18 +435,24 @@
      transition: transform 0.3s ease;
    }
 
-   /* Specific fix for Style section's bottom padding when collapsed */
+   /* Specific handling for #style-section-content-area (which is .content4) */
+   /* This ensures its specific padding and gap are also transitioned. */
    #style-section-content-area.collapsible-content-area {
-     /* This rule ensures that padding-bottom is included in the transition.
-        It will use the max-height transition from the general .collapsible-content-area rule
-        and add padding-bottom transition here. */
-     transition-property: max-height, padding-bottom;
-     transition-duration: 0.3s, 0.3s; /* Duration for max-height, padding-bottom */
-     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1);
+     /* It already has .collapsible-content-area, so max-height is covered.
+        Add transitions for padding and gap.
+        The base styles for .content4 (gap: 12px, padding-bottom: 16px, padding-top: 0px from inline styles)
+        will be the 'expanded' state values.
+     */
+     transition-property: max-height, padding-top, padding-bottom, gap;
+     transition-duration: 0.3s; /* Single duration for all */
+     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* Single timing for all */
    }
 
    #style-section-content-area.collapsible-content-area:not(.expanded) {
-     padding-bottom: 0px !important; /* Force padding to 0 when collapsed */
+     padding-top: 0px !important;
+     padding-bottom: 0px !important;
+     gap: 0px !important;
+     /* max-height: 0 is implicitly handled by .collapsible-content-area when not .expanded */
    }
   </style>
   <script>
