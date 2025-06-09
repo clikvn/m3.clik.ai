@@ -146,7 +146,7 @@
      width: 100%;
      display: grid;
      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-     gap: 16px;
+     gap: 12px;
      padding: 16px 0;
    }
 
@@ -154,10 +154,26 @@
      width: 100%;
    }
 
-   .material-image {
+   .material-item {
+     width: 100%;
+     cursor: pointer;
+     box-sizing: border-box;
+     overflow: hidden;
+   }
+
+   .material-item .material-image {
      width: 100%;
      height: auto;
      object-fit: cover;
+     display: block;
+     border: none;
+     box-sizing: border-box;
+     border-radius: 8px;
+     transition: border-color 0.3s ease;
+   }
+
+   .material-item.selected .material-image {
+     border: 2px solid var(--md-sys-color-primary, #007bff);
    }
 
    /* Style Selection */
@@ -290,7 +306,7 @@
      width: 100%;
      display: grid;
      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-     gap: 16px;
+     gap: 12px;
      padding: 0 !important;
    }
 
@@ -298,7 +314,7 @@
    .content11 .gallery {
      display: grid !important;
      grid-template-columns: repeat(4, 1fr) !important;
-     gap: 16px !important;
+     gap: 12px !important;
      padding: 0 !important;
      box-sizing: border-box !important;
    }
@@ -357,6 +373,45 @@
      z-index: 10 !important; /* Ensure it is on top of the color swatch */
      overflow: hidden !important; /* Clip text if it somehow overflows fixed height */
      white-space: nowrap !important; /* Keep text on a single line */
+     
+   }
+
+   /* Save Button Styling */
+   #save-materials-btn { /* Style for the button tag itself */
+       background: transparent;
+       border: none;
+       padding: 0;
+       cursor: pointer;
+   }
+   #save-materials-btn:disabled {
+       cursor: not-allowed;
+   }
+
+   #save-materials-btn .save-material {
+     display: flex;
+     align-items: center;
+     gap: 8px; /* Space between icon and label */
+     padding: 10px 24px; /* M3 button padding */
+     border-radius: var(--md-shape-corner-full, 20px); /* M3 full corner radius */
+     transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+   }
+
+   /* Enabled state for the save button's inner content */
+   #save-materials-btn:enabled .save-material {
+     background-color: var(--md-sys-color-primary, #007bff);
+     color: var(--md-sys-color-on-primary, #ffffff);
+   }
+   #save-materials-btn:enabled .save-material img.icon4 {
+     filter: brightness(0) invert(1); /* Assuming icon is dark, make it white */
+   }
+
+   /* Disabled state for the save button's inner content */
+   #save-materials-btn:disabled .save-material {
+     background-color: #E0E0E0; /* Gray background */
+     color: #A0A0A0; /* Dimmed text */
+   }
+    #save-materials-btn:disabled .save-material img.icon4 {
+     filter: grayscale(100%) opacity(0.5); /* Dimmed icon */
    }
   </style>
   <script>
@@ -526,6 +581,31 @@
         }
         updateMainColorGallery(); 
       }
+
+      // === New JS for Material Selection and Save Button State ===
+      const saveMaterialsButton = document.getElementById('save-materials-btn');
+      const materialItems = document.querySelectorAll('.material-item');
+
+      function updateSaveButtonState() {
+        if (!saveMaterialsButton) return; // Guard clause
+        const selectedMaterialsCount = document.querySelectorAll('.material-item.selected').length;
+        if (selectedMaterialsCount > 0) {
+          saveMaterialsButton.disabled = false;
+        } else {
+          saveMaterialsButton.disabled = true;
+        }
+      }
+
+      materialItems.forEach(item => {
+        item.addEventListener('click', function() {
+          this.classList.toggle('selected');
+          updateSaveButtonState();
+        });
+      });
+
+      // Initialize button state on page load
+      updateSaveButtonState();
+      // === End of New JS ===
 
     });
   </script>
@@ -798,9 +878,9 @@
             <div class="content3">
               <h2 class="section-title">Palette & Materials</h2>
             </div>
-            <button class="button" aria-label="Save changes">
+            <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
               <div class="content10">
-                <div class="state-layer2">
+                <div class="save-material">
                   <img class="icon4" src="icon3.svg" alt="Save icon" />
                   <span class="label">Save</span>
                 </div>
