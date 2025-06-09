@@ -392,7 +392,6 @@
      align-items: center;
      gap: 8px; /* Space between icon and label */
      padding: 10px 24px; /* M3 button padding */
-     border-radius: var(--md-shape-corner-full, 20px); /* M3 full corner radius */
      transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
    }
 
@@ -412,6 +411,42 @@
    }
     #save-materials-btn:disabled .save-material img.icon4 {
      filter: grayscale(100%) opacity(0.5); /* Dimmed icon */
+   }
+
+   /* Collapsible Section Styles */
+   .collapsible-content-area {
+     max-height: 0;
+     overflow: hidden;
+     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+   }
+
+   .collapsible-content-area.expanded {
+     max-height: 2000px; /* Adjust as needed, should be larger than content */
+   }
+
+   .dropdown-icon.rotated,
+   .dropdown-icon2.rotated {
+     transform: rotate(180deg);
+     transition: transform 0.3s ease;
+   }
+
+   .dropdown-icon,
+   .dropdown-icon2 {
+     transition: transform 0.3s ease;
+   }
+
+   /* Specific fix for Style section's bottom padding when collapsed */
+   #style-section-content-area.collapsible-content-area {
+     /* This rule ensures that padding-bottom is included in the transition.
+        It will use the max-height transition from the general .collapsible-content-area rule
+        and add padding-bottom transition here. */
+     transition-property: max-height, padding-bottom;
+     transition-duration: 0.3s, 0.3s; /* Duration for max-height, padding-bottom */
+     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1);
+   }
+
+   #style-section-content-area.collapsible-content-area:not(.expanded) {
+     padding-bottom: 0px !important; /* Force padding to 0 when collapsed */
    }
   </style>
   <script>
@@ -607,6 +642,44 @@
       updateSaveButtonState();
       // === End of New JS ===
 
+      // === JS for Collapsible Sections ===
+      function setupCollapsibleSection(toggleBtnId, iconId, contentAreaId, initiallyExpanded = true) {
+        const toggleBtn = document.getElementById(toggleBtnId);
+        const icon = document.getElementById(iconId);
+        const contentArea = document.getElementById(contentAreaId);
+
+        if (!toggleBtn || !icon || !contentArea) {
+          console.warn('Collapsible section elements not found for:', toggleBtnId, iconId, contentAreaId);
+          return;
+        }
+
+        // Add the base class for CSS transitions
+        contentArea.classList.add('collapsible-content-area');
+
+        function toggleSection() {
+          contentArea.classList.toggle('expanded');
+          icon.classList.toggle('rotated');
+        }
+
+        toggleBtn.addEventListener('click', toggleSection);
+
+        // Set initial state
+        if (initiallyExpanded) {
+          contentArea.classList.add('expanded');
+          icon.classList.add('rotated');
+        } else {
+          contentArea.classList.remove('expanded');
+          icon.classList.remove('rotated');
+        }
+      }
+
+      // Setup Style Section
+      setupCollapsibleSection('style-section-toggle-btn', 'style-section-toggle-icon', 'style-section-content-area', true);
+
+      // Setup Palette & Materials Section
+      setupCollapsibleSection('palette-materials-section-toggle-btn', 'palette-materials-section-toggle-icon', 'palette-materials-section-content-area', true);
+      // === End of Collapsible Sections JS ===
+
     });
   </script>
   <title>Moodboard - Material Design 3</title>
@@ -666,13 +739,13 @@
             <div class="content3">
               <div class="style">Style: Minimalist</div>
             </div>
-            <button class="dropdown-button" aria-label="Toggle style options">
-              <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" />
+            <button class="dropdown-button" aria-label="Toggle style options" id="style-section-toggle-btn">
+              <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
             </button>
           </div>
 
           <!-- Style Options -->
-          <div class="content4">
+          <div class="content4" id="style-section-content-area">
             <!-- Selected Style -->
             <article class="content5 selected-style">
               <div class="content6">
@@ -886,13 +959,13 @@
                 </div>
               </div>
             </button>
-            <button class="dropdown-button" aria-label="Toggle palette options">
-              <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" />
+            <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
+              <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
             </button>
           </div>
 
           <!-- Color Gallery -->
-          <div class="content11">
+          <div class="content11" id="palette-materials-section-content-area">
             <div class="gallery" role="list" aria-label="Color palette">
               <div class="color-item">
                 <div class="color-swatch"></div>
