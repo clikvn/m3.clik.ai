@@ -112,12 +112,20 @@
    .bottom-sheet-content {
      width: 100%;
      background-color: white;
-     position: relative;
+   }
+
+   .sticky-headers-container {
+     position: sticky;
+     top: 0;
+     z-index: 50; /* Ensure it's high for testing */
+     background-color: var(--md-sys-color-surface, white); /* Restore original background */
+     /* height is now determined by its content */
+     margin-top: 0 !important; /* Ensure no top margin pushes sticky container down */
+     width: 100%; /* Ensure it tries to fill parent width */
+     /* The actual content (.divider, .content2, .content9) will be inside this box */
    }
 
    .divider {
-     position: sticky;
-     top: 0;
      left: 0;
      right: 0;
      width: 100%;
@@ -126,15 +134,13 @@
      justify-content: center;
      align-items: center;
      background: white;
-     z-index: 2;
    }
 
    .progress-bar {
      width: 32px;
      height: 4px;
-     background: #73777F;
+     background: var(--md-sys-color-outline-variant, #CAC4D0);
      border-radius: 2px;
-     opacity: 0.38;
    }
 
    /* Content Sections */
@@ -182,6 +188,30 @@
      justify-content: space-between;
      align-items: center;
      width: 100%;
+     background-color: var(--md-sys-color-surface, white);
+     padding: 8px 16px;
+     box-sizing: border-box; /* Still good practice */
+   }
+
+   /* Style for the text within .content2 to ensure it doesn't expand .content2's height */
+   .content2 .content3 .style {
+     height: 24px; /* Match the icon height and available content space */
+     line-height: 24px; /* Vertically center text within the 24px height */
+     overflow: hidden; /* Clip text if it's too long */
+     white-space: nowrap; /* Prevent text wrapping from increasing height */
+     text-overflow: ellipsis; /* Indicate if text is clipped */
+     display: block; /* Ensure it behaves as a block for height properties */
+   }
+
+   /* Constrain dropdown button height within sticky headers */
+   .content2 > .dropdown-button {
+     height: 24px;
+     padding-top: 0;
+     padding-bottom: 0;
+     line-height: 24px;
+     display: inline-flex; /* Or flex, to align icon inside */
+     align-items: center;
+     vertical-align: middle; /* Align button with other items in the flex line if needed */
    }
 
    .content4 {
@@ -245,6 +275,8 @@
      justify-content: space-between;
      align-items: center;
      width: 100%;
+     background-color: var(--md-sys-color-surface, white);
+     padding: 8px 16px;
    }
 
    .content11 {
@@ -427,11 +459,14 @@
    .dropdown-icon.rotated,
    .dropdown-icon2.rotated {
      transform: rotate(180deg);
-     transition: transform 0.3s ease;
+     /* transition: transform 0.3s ease; -- will be covered by base style */
    }
 
    .dropdown-icon,
    .dropdown-icon2 {
+     width: 24px;  /* Standard icon size */
+     height: 24px; /* Standard icon size */
+     vertical-align: middle; /* Good practice for icons */
      transition: transform 0.3s ease;
    }
 
@@ -453,6 +488,17 @@
      padding-bottom: 0px !important;
      gap: 0px !important;
      /* max-height: 0 is implicitly handled by .collapsible-content-area when not .expanded */
+   }
+
+   /* Constrain dropdown button height within sticky headers */
+   .content9 > .dropdown-button {
+     height: 24px;
+     padding-top: 0;
+     padding-bottom: 0;
+     line-height: 24px;
+     display: inline-flex; /* Or flex, to align icon inside */
+     align-items: center;
+     vertical-align: middle; /* Align button with other items in the flex line if needed */
    }
   </style>
   <script>
@@ -730,26 +776,45 @@
 
     <!-- Bottom Sheet -->
     <div class="bottom-sheet">
-      <div class="bottom-sheet-content">
+      <div class="sticky-headers-container">
         <div class="divider">
           <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
+        <!-- Style Header -->
+        <div class="content2">
+          <div class="content3">
+            <div class="style">Style: Minimalist</div>
+          </div>
+          <button class="dropdown-button" aria-label="Toggle style options" id="style-section-toggle-btn">
+            <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
+          </button>
+        </div>
+        <!-- Palette & Materials Header -->
+        <div class="content9">
+          <div class="content3">
+            <h2 class="section-title">Palette & Materials</h2>
+          </div>
+          <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
+            <div class="content10">
+              <div class="save-material">
+                <img class="icon4" src="icon3.svg" alt="Save icon" />
+                <span class="label">Save</span>
+              </div>
+            </div>
+          </button>
+          <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
+            <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
+          </button>
+        </div>
+      </div>
+      <div class="bottom-sheet-content">
         <!-- Progress Section -->
         <section class="progress-section" aria-label="Progress">
           <!-- (No divider here) -->
         </section>
 
-        <!-- Style Selection Section -->
-        <section class="style-section" aria-label="Style selection">
-          <div class="content2">
-            <div class="content3">
-              <div class="style">Style: Minimalist</div>
-            </div>
-            <button class="dropdown-button" aria-label="Toggle style options" id="style-section-toggle-btn">
-              <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
-            </button>
-          </div>
-
+        <!-- Style Selection Section (Content Only) -->
+        <section class="style-section" aria-label="Style selection details">
           <!-- Style Options -->
           <div class="content4" id="style-section-content-area">
             <!-- Selected Style -->
@@ -951,25 +1016,8 @@
           </div>
         </section>
 
-        <!-- Palette & Materials Section -->
-        <section class="palette-materials-section" aria-label="Palette and materials">
-          <div class="content9">
-            <div class="content3">
-              <h2 class="section-title">Palette & Materials</h2>
-            </div>
-            <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
-              <div class="content10">
-                <div class="save-material">
-                  <img class="icon4" src="icon3.svg" alt="Save icon" />
-                  <span class="label">Save</span>
-                </div>
-              </div>
-            </button>
-            <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
-              <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
-            </button>
-          </div>
-
+        <!-- Palette & Materials Section (Content Only) -->
+        <section class="palette-materials-section" aria-label="Palette and materials details">
           <!-- Color Gallery -->
           <div class="content11" id="palette-materials-section-content-area">
             <div class="gallery" role="list" aria-label="Color palette">
@@ -1061,6 +1109,7 @@
             </div>
           </div>
         </section>
+        <div style="height: 1500px; background: #f0f0f0; margin-top: 20px; text-align: center; padding-top: 20px;">Scrollable Placeholder Content</div>
       </div>
     </div>
   </div>
