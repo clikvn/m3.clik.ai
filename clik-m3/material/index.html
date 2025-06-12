@@ -114,17 +114,6 @@
      background-color: white;
    }
 
-   .sticky-headers-container {
-     position: sticky;
-     top: 0;
-     z-index: 50; /* Ensure it's high for testing */
-     background-color: var(--md-sys-color-surface, white); /* Restore original background */
-     /* height is now determined by its content */
-     margin-top: 0 !important; /* Ensure no top margin pushes sticky container down */
-     width: 100%; /* Ensure it tries to fill parent width */
-     /* The actual content (.divider, .content2, .content9) will be inside this box */
-   }
-
    .divider {
      left: 0;
      right: 0;
@@ -133,7 +122,10 @@
      display: flex;
      justify-content: center;
      align-items: center;
-     background: white;
+     position: sticky;
+     top: 0;
+     z-index: 52;
+     background-color: var(--md-sys-color-surface, white);
    }
 
    .progress-bar {
@@ -188,9 +180,12 @@
      justify-content: space-between;
      align-items: center;
      width: 100%;
-     background-color: var(--md-sys-color-surface, white);
      padding: 8px 16px;
-     box-sizing: border-box; /* Still good practice */
+     box-sizing: border-box;
+     position: sticky;
+     top: 20px;
+     z-index: 51;
+     background-color: var(--md-sys-color-surface, white);
    }
 
    /* Style for the text within .content2 to ensure it doesn't expand .content2's height */
@@ -275,8 +270,11 @@
      justify-content: space-between;
      align-items: center;
      width: 100%;
-     background-color: var(--md-sys-color-surface, white);
      padding: 8px 16px;
+     position: sticky;
+     top: 60px;
+     z-index: 50;
+     background-color: var(--md-sys-color-surface, white);
    }
 
    .content11 {
@@ -500,7 +498,7 @@
      align-items: center;
      vertical-align: middle; /* Align button with other items in the flex line if needed */
    }
-  </style>
+   </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const bottomSheet = document.querySelector('.bottom-sheet');
@@ -515,10 +513,22 @@
           const currentYMove = e.touches[0].clientY;
           const diff = startY - currentYMove;
           
-          if (diff > 50) {
+          let stateChanged = false;
+          if (diff > 50 && !bottomSheet.classList.contains('expanded')) {
             bottomSheet.classList.add('expanded');
-          } else if (diff < -50) {
+            stateChanged = true;
+          } else if (diff < -50 && bottomSheet.classList.contains('expanded')) {
             bottomSheet.classList.remove('expanded');
+            stateChanged = true;
+          }
+
+          if (stateChanged) {
+            // Nudge after the bottom sheet height transition has ended
+            function nudgeAfterBottomSheetTransition() {
+              requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
+              bottomSheet.removeEventListener('transitionend', nudgeAfterBottomSheetTransition); 
+            }
+            bottomSheet.addEventListener('transitionend', nudgeAfterBottomSheetTransition);
           }
         });
       }
@@ -633,9 +643,18 @@
 
           const firstPaletteInThisStyle = this.querySelector('.list .item');
           if (firstPaletteInThisStyle) {
-            selectPaletteOptionInGroup(firstPaletteInThisStyle, this); 
+            selectPaletteOptionInGroup(firstPaletteInThisStyle, this);
           }
           updateMainColorGallery();
+          
+          // Nudge after the transition of the clicked style choice has ended
+          // Ensure any direct rAF call is removed and transitionend listener is used.
+          // REMOVE: requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
+          this.addEventListener('transitionend', function nudgeAfterStyleChoiceTransition() {
+            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
+            this.removeEventListener('transitionend', nudgeAfterStyleChoiceTransition); 
+          });
+
         });
       });
       
@@ -646,6 +665,7 @@
           if (parentStyleContainer) {
             selectPaletteOptionInGroup(this, parentStyleContainer);
             updateMainColorGallery();
+            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); // Wrap in double rAF
           }
         });
       });
@@ -667,6 +687,40 @@
           selectPaletteOptionInGroup(firstPaletteInDefaultStyle, defaultStyleOption);
         }
         updateMainColorGallery(); 
+
+        // Nudge .content9 & jiggle scroll after the default style option (e.g., Minimalist) has finished expanding
+        function onDefaultStyleOptionInitiallyExpanded() {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // 1. Ensure scroll container is at the top
+              const bottomSheet = document.querySelector('.bottom-sheet');
+              if (bottomSheet) {
+                bottomSheet.scrollTop = 0; // Explicitly scroll to top
+                // 2. Force reflow on scroll container
+                void bottomSheet.offsetHeight; 
+                // console.log('Bottom sheet scrolled to top & reflowed post initial default style expansion');
+              }
+
+              // 3. Then nudge .content9
+              ensureContent9StickyBehavior(); 
+            });
+          });
+
+          defaultStyleOption.removeEventListener('transitionend', onDefaultStyleOptionInitiallyExpanded);
+        }
+        defaultStyleOption.addEventListener('transitionend', onDefaultStyleOptionInitiallyExpanded);
+      }
+
+      // === Function to nudge sticky recalculation ===
+      function ensureContent9StickyBehavior() {
+        const content9 = document.querySelector('.content9');
+        if (content9) {
+          // Unconditionally attempt to re-trigger the CSS `position: sticky` evaluation.
+          content9.style.position = 'relative'; // Temporarily override CSS to take it out of sticky flow
+          void content9.offsetHeight;          // Force the browser to reflow/recalculate layout
+          content9.style.position = '';         // Clear inline style, allow stylesheet rule to take effect
+          // console.log('Nudged .content9 by toggling position and clearing inline style'); // For debugging
+        }
       }
 
       // === New JS for Material Selection and Save Button State ===
@@ -711,6 +765,14 @@
         function toggleSection() {
           contentArea.classList.toggle('expanded');
           icon.classList.toggle('rotated');
+          // ensureContent9StickyBehavior(); // REMOVE direct call
+
+          // Nudge after the transition of the content area has ended
+          function nudgeAfterContentAreaTransition() {
+            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); // Wrap in double rAF
+            contentArea.removeEventListener('transitionend', nudgeAfterContentAreaTransition); // Self-remove listener
+          }
+          contentArea.addEventListener('transitionend', nudgeAfterContentAreaTransition);
         }
 
         toggleBtn.addEventListener('click', toggleSection);
@@ -719,6 +781,26 @@
         if (initiallyExpanded) {
           contentArea.classList.add('expanded');
           icon.classList.add('rotated');
+
+          // If this is the main style section content area, nudge .content9 & jiggle scroll after its initial expansion
+          if (contentAreaId === 'style-section-content-area') {
+            function onStyleSectionInitiallyExpanded() {
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  ensureContent9StickyBehavior(); // Nudge .content9
+
+                  // Try to jiggle scroll position of bottom-sheet to force sticky re-evaluation
+                  const bottomSheet = document.querySelector('.bottom-sheet');
+                  if (bottomSheet) {
+                    bottomSheet.scrollTop = bottomSheet.scrollTop;
+                    // console.log('Bottom sheet scroll position jiggled post initial style section expansion');
+                  }
+                });
+              });
+              contentArea.removeEventListener('transitionend', onStyleSectionInitiallyExpanded);
+            }
+            contentArea.addEventListener('transitionend', onStyleSectionInitiallyExpanded);
+          }
         } else {
           contentArea.classList.remove('expanded');
           icon.classList.remove('rotated');
@@ -762,76 +844,137 @@
 
     <!-- Sticky Hero Image -->
     <section class="hero-section" aria-label="Hero image">
-      <img
-        class="image"
-        style="
-          background: url(image0.png) center;
-          background-size: cover;
-          background-repeat: no-repeat;
-        "
-        src="image0.png"
+    <img
+      class="image"
+      style="
+        background: url(image0.png) center;
+        background-size: cover;
+        background-repeat: no-repeat;
+      "
+      src="image0.png"
         alt="Moodboard hero image"
-      />
+    />
     </section>
 
     <!-- Bottom Sheet -->
     <div class="bottom-sheet">
-      <div class="sticky-headers-container">
-        <div class="divider">
-          <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-        <!-- Style Header -->
-        <div class="content2">
-          <div class="content3">
-            <div class="style">Style: Minimalist</div>
-          </div>
-          <button class="dropdown-button" aria-label="Toggle style options" id="style-section-toggle-btn">
-            <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
-          </button>
-        </div>
-        <!-- Palette & Materials Header -->
-        <div class="content9">
-          <div class="content3">
-            <h2 class="section-title">Palette & Materials</h2>
-          </div>
-          <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
-            <div class="content10">
-              <div class="save-material">
-                <img class="icon4" src="icon3.svg" alt="Save icon" />
-                <span class="label">Save</span>
-              </div>
-            </div>
-          </button>
-          <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
-            <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
-          </button>
-        </div>
+      <div class="divider">
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
-      <div class="bottom-sheet-content">
-        <!-- Progress Section -->
-        <section class="progress-section" aria-label="Progress">
-          <!-- (No divider here) -->
-        </section>
+      <!-- Style Header -->
+      <div class="content2">
+        <div class="content3">
+          <div class="style">Style: Minimalist</div>
+        </div>
+        <button class="dropdown-button" aria-label="Toggle style options" id="style-section-toggle-btn">
+          <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
+        </button>
+      </div>
+      <!-- Palette & Materials Header -->
+      <div class="content9">
+        <div class="content3">
+          <h2 class="section-title">Palette & Materials</h2>
+        </div>
+        <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
+          <div class="content10">
+            <div class="save-material">
+              <img class="icon4" src="icon3.svg" alt="Save icon" />
+              <span class="label">Save</span>
+            </div>
+          </div>
+        </button>
+        <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
+          <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
+        </button>
+      </div>
+      
+      <!-- Progress Section -->
+      <section class="progress-section" aria-label="Progress">
+        <!-- (No divider here) -->
+      </section>
 
-        <!-- Style Selection Section (Content Only) -->
-        <section class="style-section" aria-label="Style selection details">
-          <!-- Style Options -->
-          <div class="content4" id="style-section-content-area">
-            <!-- Selected Style -->
-            <article class="content5 selected-style">
-              <div class="content6">
-                <div class="content7">
-                  <h2 class="title">Minimalist</h2>
-                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+      <!-- Style Selection Section (Content Only) -->
+      <section class="style-section" aria-label="Style selection details">
+        <!-- Style Options -->
+        <div class="content4" id="style-section-content-area">
+          <!-- Selected Style -->
+          <article class="content5 selected-style">
+          <div class="content6">
+            <div class="content7">
+                <h2 class="title">Minimalist</h2>
+                <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+            </div>
+              <p class="description">
+              The Japandi moodboard is presented, featuring a serene blend of
+              Japanese minimalism with Scandinavian functionality. The color
+              palette includes Oyster White, Warm Grey, Cool Grey, and Taupe.
+              </p>
+            </div>
+
+            <!-- Color Palette Section -->
+          <div class="content8">
+              <h3 class="color-palette-label">Color palette:</h3>
+              <ul class="list" role="list">
+                <li class="item">
+                <div class="radio-buttons">
+                  <div class="container">
+                    <div class="state-layer">
+                        <img class="icon" src="icon0.svg" alt="Soft Neutrals (selected)" />
+                      </div>
+                  </div>
                 </div>
-                <p class="description">
-                  The Japandi moodboard is presented, featuring a serene blend of
-                  Japanese minimalism with Scandinavian functionality. The color
-                  palette includes Oyster White, Warm Grey, Cool Grey, and Taupe.
-                </p>
-              </div>
+                <div class="soft-neutrals">Soft Neutrals</div>
+                <div class="items">
+                  <div class="ellipse-1"></div>
+                  <div class="ellipse-2"></div>
+                  <div class="ellipse-3"></div>
+                  <div class="ellipse-4"></div>
+                </div>
+                </li>
+                <li class="item">
+                <div class="radio-buttons">
+                  <div class="container">
+                    <div class="state-layer">
+                        <img class="icon2" src="icon1.svg" alt="Scandinavian Breeze (not selected)" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="scadinavian-breeze">Scandinavian Breeze</div>
+                <div class="items">
+                  <div class="ellipse-12"></div>
+                  <div class="ellipse-22"></div>
+                  <div class="ellipse-32"></div>
+                  <div class="ellipse-42"></div>
+                </div>
+                </li>
+                <li class="item">
+                <div class="radio-buttons">
+                  <div class="container">
+                    <div class="state-layer">
+                        <img class="icon3" src="icon2.svg" alt="Scandinavian Breeze 2 (not selected)" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="scadinavian-breeze-2">Scandinavian Breeze 2</div>
+                <div class="items">
+                  <div class="ellipse-13"></div>
+                  <div class="ellipse-23"></div>
+                  <div class="ellipse-33"></div>
+                  <div class="ellipse-43"></div>
+                </div>
+                </li>
+              </ul>
+            </div>
+          </article>
 
-              <!-- Color Palette Section -->
+          <!-- Other Style Options -->
+          <article class="content5">
+            <div class="content6">
+              <div class="content7">
+                <h2 class="style-name">Industrial</h2>
+                <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+              </div>
+              <p class="description">The Industrial moodboard is presented, featuring a raw blend of exposed materials and utilitarian design. The color palette includes Charcoal, Concrete Grey, Rust, and Steel Blue.</p>
               <div class="content8">
                 <h3 class="color-palette-label">Color palette:</h3>
                 <ul class="list" role="list">
@@ -839,11 +982,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon" src="icon0.svg" alt="Soft Neutrals (selected)" />
+                          <img class="icon" src="icon0.svg" alt="Urban Greys (selected)" />
                         </div>
                       </div>
                     </div>
-                    <div class="soft-neutrals">Soft Neutrals</div>
+                    <div class="soft-neutrals">Urban Greys</div>
                     <div class="items">
                       <div class="ellipse-1"></div>
                       <div class="ellipse-2"></div>
@@ -855,11 +998,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon2" src="icon1.svg" alt="Scandinavian Breeze (not selected)" />
+                          <img class="icon2" src="icon1.svg" alt="Rustic Metals (not selected)" />
                         </div>
                       </div>
                     </div>
-                    <div class="scadinavian-breeze">Scandinavian Breeze</div>
+                    <div class="scadinavian-breeze">Rustic Metals</div>
                     <div class="items">
                       <div class="ellipse-12"></div>
                       <div class="ellipse-22"></div>
@@ -871,11 +1014,11 @@
                     <div class="radio-buttons">
                       <div class="container">
                         <div class="state-layer">
-                          <img class="icon3" src="icon2.svg" alt="Scandinavian Breeze 2 (not selected)" />
-                        </div>
-                      </div>
-                    </div>
-                    <div class="scadinavian-breeze-2">Scandinavian Breeze 2</div>
+                          <img class="icon3" src="icon1.svg" alt="Steel Blue (not selected)" />
+            </div>
+          </div>
+        </div>
+                    <div class="scadinavian-breeze-2">Steel Blue</div>
                     <div class="items">
                       <div class="ellipse-13"></div>
                       <div class="ellipse-23"></div>
@@ -885,232 +1028,168 @@
                   </li>
                 </ul>
               </div>
-            </article>
-
-            <!-- Other Style Options -->
-            <article class="content5">
-              <div class="content6">
-                <div class="content7">
-                  <h2 class="style-name">Industrial</h2>
-                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
-                </div>
-                <p class="description">The Industrial moodboard is presented, featuring a raw blend of exposed materials and utilitarian design. The color palette includes Charcoal, Concrete Grey, Rust, and Steel Blue.</p>
-                <div class="content8">
-                  <h3 class="color-palette-label">Color palette:</h3>
-                  <ul class="list" role="list">
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon" src="icon0.svg" alt="Urban Greys (selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="soft-neutrals">Urban Greys</div>
-                      <div class="items">
-                        <div class="ellipse-1"></div>
-                        <div class="ellipse-2"></div>
-                        <div class="ellipse-3"></div>
-                        <div class="ellipse-4"></div>
-                      </div>
-                    </li>
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon2" src="icon1.svg" alt="Rustic Metals (not selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="scadinavian-breeze">Rustic Metals</div>
-                      <div class="items">
-                        <div class="ellipse-12"></div>
-                        <div class="ellipse-22"></div>
-                        <div class="ellipse-32"></div>
-                        <div class="ellipse-42"></div>
-                      </div>
-                    </li>
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon3" src="icon1.svg" alt="Steel Blue (not selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="scadinavian-breeze-2">Steel Blue</div>
-                      <div class="items">
-                        <div class="ellipse-13"></div>
-                        <div class="ellipse-23"></div>
-                        <div class="ellipse-33"></div>
-                        <div class="ellipse-43"></div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </article>
-
-            <article class="content5">
-              <div class="content6">
-                <div class="content7">
-                  <h2 class="style-name">Mid-Century Modern</h2>
-                  <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
-                </div>
-                <p class="description">The Mid-Century Modern moodboard is presented, featuring a timeless blend of organic forms and bold colors. The color palette includes Teal, Mustard, Walnut, and Cream.</p>
-                <div class="content8">
-                  <h3 class="color-palette-label">Color palette:</h3>
-                  <ul class="list" role="list">
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon" src="icon0.svg" alt="Retro Teal (selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="soft-neutrals">Retro Teal</div>
-                      <div class="items">
-                        <div class="ellipse-1"></div>
-                        <div class="ellipse-2"></div>
-                        <div class="ellipse-3"></div>
-                        <div class="ellipse-4"></div>
-                      </div>
-                    </li>
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon2" src="icon1.svg" alt="Mustard Yellow (not selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="scadinavian-breeze">Mustard Yellow</div>
-                      <div class="items">
-                        <div class="ellipse-12"></div>
-                        <div class="ellipse-22"></div>
-                        <div class="ellipse-32"></div>
-                        <div class="ellipse-42"></div>
-                      </div>
-                    </li>
-                    <li class="item">
-                      <div class="radio-buttons">
-                        <div class="container">
-                          <div class="state-layer">
-                            <img class="icon3" src="icon1.svg" alt="Walnut (not selected)" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="scadinavian-breeze-2">Walnut</div>
-                      <div class="items">
-                        <div class="ellipse-13"></div>
-                        <div class="ellipse-23"></div>
-                        <div class="ellipse-33"></div>
-                        <div class="ellipse-43"></div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <!-- Palette & Materials Section (Content Only) -->
-        <section class="palette-materials-section" aria-label="Palette and materials details">
-          <!-- Color Gallery -->
-          <div class="content11" id="palette-materials-section-content-area">
-            <div class="gallery" role="list" aria-label="Color palette">
-              <div class="color-item">
-                <div class="color-swatch"></div>
-                <div class="color-code">#FFFFFF</div>
-              </div>
-              <div class="color-item2">
-                <div class="color-swatch2"></div>
-                <div class="color-code2">#808080</div>
-              </div>
-              <div class="color-item2">
-                <div class="color-swatch3"></div>
-                <div class="color-code3">#F5F5DC</div>
-              </div>
-              <div class="color-item2">
-                <div class="color-swatch4"></div>
-                <div class="color-code2">#000000</div>
-              </div>
             </div>
+          </article>
 
-            <!-- Materials Section -->
-            <div class="content12">
-              <h3 class="materials-label">Materials</h3>
-            </div>
-
-            <!-- Materials Gallery -->
-            <div class="gallery" role="list" aria-label="Materials">
-              <article class="material-item">
-                <img class="material-image" src="material-image0.png" alt="Panel material" />
-                <div class="material-code">#mcode</div>
-                <div class="recommended">
-                  <span class="material-type">Panel</span>
-                </div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image1.png" alt="Paint material" />
-                <div class="recommended">
-                  <span class="material-type">Paint</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image2.png" alt="Curtain material" />
-                <div class="recommended">
-                  <span class="material-type">Curtain</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image3.png" alt="Flooring material" />
-                <div class="recommended">
-                  <span class="material-type">Flooring</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
-            </div>
-
-            <!-- Additional Materials Gallery -->
-            <div class="gallery" role="list" aria-label="Additional materials">
-              <article class="material-item">
-                <img class="material-image" src="material-image4.png" alt="Panel material" />
-                <div class="material-code">#mcode</div>
-                <div class="recommended">
-                  <span class="material-type">Panel</span>
-                </div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image5.png" alt="Paint material" />
-                <div class="recommended">
-                  <span class="material-type">Paint</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image6.png" alt="Curtain material" />
-                <div class="recommended">
-                  <span class="material-type">Curtain</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
-              <article class="material-item">
-                <img class="material-image" src="material-image7.png" alt="Flooring material" />
-                <div class="recommended">
-                  <span class="material-type">Flooring</span>
-                </div>
-                <div class="material-code">#mcode</div>
-              </article>
+          <article class="content5">
+          <div class="content6">
+            <div class="content7">
+                <h2 class="style-name">Mid-Century Modern</h2>
+                <img class="check-icon" src="check-icon0.svg" alt="Selected style" />
+              </div>
+              <p class="description">The Mid-Century Modern moodboard is presented, featuring a timeless blend of organic forms and bold colors. The color palette includes Teal, Mustard, Walnut, and Cream.</p>
+              <div class="content8">
+                <h3 class="color-palette-label">Color palette:</h3>
+                <ul class="list" role="list">
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon" src="icon0.svg" alt="Retro Teal (selected)" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="soft-neutrals">Retro Teal</div>
+                    <div class="items">
+                      <div class="ellipse-1"></div>
+                      <div class="ellipse-2"></div>
+                      <div class="ellipse-3"></div>
+                      <div class="ellipse-4"></div>
+                    </div>
+                  </li>
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon2" src="icon1.svg" alt="Mustard Yellow (not selected)" />
             </div>
           </div>
-        </section>
-        <div style="height: 1500px; background: #f0f0f0; margin-top: 20px; text-align: center; padding-top: 20px;">Scrollable Placeholder Content</div>
+        </div>
+                    <div class="scadinavian-breeze">Mustard Yellow</div>
+                    <div class="items">
+                      <div class="ellipse-12"></div>
+                      <div class="ellipse-22"></div>
+                      <div class="ellipse-32"></div>
+                      <div class="ellipse-42"></div>
+                    </div>
+                  </li>
+                  <li class="item">
+                    <div class="radio-buttons">
+                      <div class="container">
+                        <div class="state-layer">
+                          <img class="icon3" src="icon1.svg" alt="Walnut (not selected)" />
+            </div>
+          </div>
+        </div>
+                    <div class="scadinavian-breeze-2">Walnut</div>
+                    <div class="items">
+                      <div class="ellipse-13"></div>
+                      <div class="ellipse-23"></div>
+                      <div class="ellipse-33"></div>
+                      <div class="ellipse-43"></div>
       </div>
+                  </li>
+                </ul>
+        </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Palette & Materials Section (Content Only) -->
+      <section class="palette-materials-section" aria-label="Palette and materials details">
+        <!-- Color Gallery -->
+        <div class="content11" id="palette-materials-section-content-area">
+          <div class="gallery" role="list" aria-label="Color palette">
+          <div class="color-item">
+            <div class="color-swatch"></div>
+            <div class="color-code">#FFFFFF</div>
+          </div>
+          <div class="color-item2">
+            <div class="color-swatch2"></div>
+            <div class="color-code2">#808080</div>
+          </div>
+          <div class="color-item2">
+            <div class="color-swatch3"></div>
+            <div class="color-code3">#F5F5DC</div>
+          </div>
+          <div class="color-item2">
+            <div class="color-swatch4"></div>
+            <div class="color-code2">#000000</div>
+          </div>
+        </div>
+
+          <!-- Materials Section -->
+        <div class="content12">
+            <h3 class="materials-label">Materials</h3>
+        </div>
+
+          <!-- Materials Gallery -->
+          <div class="gallery" role="list" aria-label="Materials">
+            <article class="material-item">
+              <img class="material-image" src="material-image0.png" alt="Panel material" />
+            <div class="material-code">#mcode</div>
+            <div class="recommended">
+                <span class="material-type">Panel</span>
+            </div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image1.png" alt="Paint material" />
+            <div class="recommended">
+                <span class="material-type">Paint</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image2.png" alt="Curtain material" />
+            <div class="recommended">
+                <span class="material-type">Curtain</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image3.png" alt="Flooring material" />
+            <div class="recommended">
+                <span class="material-type">Flooring</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+          </div>
+
+          <!-- Additional Materials Gallery -->
+          <div class="gallery" role="list" aria-label="Additional materials">
+            <article class="material-item">
+              <img class="material-image" src="material-image4.png" alt="Panel material" />
+            <div class="material-code">#mcode</div>
+            <div class="recommended">
+                <span class="material-type">Panel</span>
+            </div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image5.png" alt="Paint material" />
+            <div class="recommended">
+                <span class="material-type">Paint</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image6.png" alt="Curtain material" />
+            <div class="recommended">
+                <span class="material-type">Curtain</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+            <article class="material-item">
+              <img class="material-image" src="material-image7.png" alt="Flooring material" />
+            <div class="recommended">
+                <span class="material-type">Flooring</span>
+            </div>
+            <div class="material-code">#mcode</div>
+            </article>
+          </div>
+        </div>
+      </section>
+      <div style="height: 1500px; background: #f0f0f0; margin-top: 20px; text-align: center; padding-top: 20px;">Scrollable Placeholder Content</div>
     </div>
   </div>
 </body>
