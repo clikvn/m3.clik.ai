@@ -97,7 +97,7 @@
      right: 0;
      width: 100%;
      height: 60vh;
-     background: var(--md-sys-color-surface);
+     background: var(--md-sys-color-surface, white);
      border-radius: 28px 28px 0 0;
      z-index: 1000;
      box-shadow: var(--md-sys-elevation-level3);
@@ -111,7 +111,7 @@
 
    .bottom-sheet-content {
      width: 100%;
-     background-color: white;
+     background-color: var(--md-sys-color-surface, white);
    }
 
    .divider {
@@ -184,8 +184,9 @@
      box-sizing: border-box;
      position: sticky;
      top: 20px;
-     z-index: 51;
+     z-index: 100;
      background-color: var(--md-sys-color-surface, white);
+     height: 44px;
    }
 
    /* Style for the text within .content2 to ensure it doesn't expand .content2's height */
@@ -270,11 +271,28 @@
      justify-content: space-between;
      align-items: center;
      width: 100%;
+     height: 100%;
      padding: 8px 16px;
-     position: sticky;
-     top: 60px;
-     z-index: 50;
      background-color: var(--md-sys-color-surface, white);
+     box-sizing: border-box;
+     position: relative;
+   }
+
+   .content9 .button,
+   .content9 .dropdown-button {
+     position: relative;
+     z-index: 101;
+   }
+
+   .content9 .content3 {
+     position: relative;
+     z-index: 101;
+   }
+
+   .content9 .content10,
+   .content9 .save-material {
+     position: relative;
+     z-index: 101;
    }
 
    .content11 {
@@ -498,12 +516,70 @@
      align-items: center;
      vertical-align: middle; /* Align button with other items in the flex line if needed */
    }
+
+   /* Sticky Header Wrapper */
+   .sticky-header-wrapper {
+     position: sticky;
+     top: 64px; /* 20px (divider) + 44px (style header) */
+     z-index: 100;
+     background-color: var(--md-sys-color-surface, white);
+     height: 56px;
+   }
+
+   /* Materials Section */
+   .content9 {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     width: 100%;
+     height: 100%;
+     padding: 8px 16px;
+     background-color: var(--md-sys-color-surface, white);
+     box-sizing: border-box;
+   }
+
+   .content11 {
+     width: 100%;
+   }
    </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const bottomSheet = document.querySelector('.bottom-sheet');
       let startY;
       
+      let initiallyExpandingSectionsCount = 0;
+      let initialStickyNudgePerformed = false;
+
+      // === Helper function to nudge sticky elements and set their top position ===
+      function nudgeStickyElement(selector, intendedTopCssValue) {
+        const element = document.querySelector(selector);
+        if (element) {
+          element.style.position = 'static'; // Reset position
+          void element.offsetHeight;          // Force reflow
+          element.style.position = 'sticky'; // Re-apply sticky
+          element.style.top = intendedTopCssValue; // Explicitly set top
+          // console.log(`Nudged ${selector} to sticky, top: ${intendedTopCssValue}`);
+        }
+      }
+
+      // === Function to perform the full sticky header nudge ===
+      function performFullStickyHeaderNudge() {
+        if (initialStickyNudgePerformed) return;
+        initialStickyNudgePerformed = true;
+
+        const bs = document.querySelector('.bottom-sheet'); // Renamed to avoid conflict with outer scope
+        if (bs) {
+            bs.scrollTop = 0;
+            void bs.offsetHeight; 
+            // console.log('Bottom sheet scrolled to top & reflowed for initial sticky nudge.');
+        }
+
+        nudgeStickyElement('.divider', '0px');
+        nudgeStickyElement('.content2', '20px');
+        
+        // console.log('Performed full initial sticky header nudge after all initial expansions.');
+      }
+
       if (bottomSheet) { 
         bottomSheet.addEventListener('touchstart', function(e) {
           startY = e.touches[0].clientY;
@@ -525,7 +601,7 @@
           if (stateChanged) {
             // Nudge after the bottom sheet height transition has ended
             function nudgeAfterBottomSheetTransition() {
-              requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
+              requestAnimationFrame(() => requestAnimationFrame(performFullStickyHeaderNudge)); 
               bottomSheet.removeEventListener('transitionend', nudgeAfterBottomSheetTransition); 
             }
             bottomSheet.addEventListener('transitionend', nudgeAfterBottomSheetTransition);
@@ -651,7 +727,7 @@
           // Ensure any direct rAF call is removed and transitionend listener is used.
           // REMOVE: requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
           this.addEventListener('transitionend', function nudgeAfterStyleChoiceTransition() {
-            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); 
+            requestAnimationFrame(() => requestAnimationFrame(performFullStickyHeaderNudge)); 
             this.removeEventListener('transitionend', nudgeAfterStyleChoiceTransition); 
           });
 
@@ -665,7 +741,7 @@
           if (parentStyleContainer) {
             selectPaletteOptionInGroup(this, parentStyleContainer);
             updateMainColorGallery();
-            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); // Wrap in double rAF
+            requestAnimationFrame(() => requestAnimationFrame(performFullStickyHeaderNudge)); // Wrap in double rAF
           }
         });
       });
@@ -687,40 +763,67 @@
           selectPaletteOptionInGroup(firstPaletteInDefaultStyle, defaultStyleOption);
         }
         updateMainColorGallery(); 
-
-        // Nudge .content9 & jiggle scroll after the default style option (e.g., Minimalist) has finished expanding
-        function onDefaultStyleOptionInitiallyExpanded() {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              // 1. Ensure scroll container is at the top
-              const bottomSheet = document.querySelector('.bottom-sheet');
-              if (bottomSheet) {
-                bottomSheet.scrollTop = 0; // Explicitly scroll to top
-                // 2. Force reflow on scroll container
-                void bottomSheet.offsetHeight; 
-                // console.log('Bottom sheet scrolled to top & reflowed post initial default style expansion');
-              }
-
-              // 3. Then nudge .content9
-              ensureContent9StickyBehavior(); 
-            });
-          });
-
-          defaultStyleOption.removeEventListener('transitionend', onDefaultStyleOptionInitiallyExpanded);
-        }
-        defaultStyleOption.addEventListener('transitionend', onDefaultStyleOptionInitiallyExpanded);
       }
 
-      // === Function to nudge sticky recalculation ===
-      function ensureContent9StickyBehavior() {
-        const content9 = document.querySelector('.content9');
-        if (content9) {
-          // Unconditionally attempt to re-trigger the CSS `position: sticky` evaluation.
-          content9.style.position = 'relative'; // Temporarily override CSS to take it out of sticky flow
-          void content9.offsetHeight;          // Force the browser to reflow/recalculate layout
-          content9.style.position = '';         // Clear inline style, allow stylesheet rule to take effect
-          // console.log('Nudged .content9 by toggling position and clearing inline style'); // For debugging
+      // === JS for Collapsible Sections ===
+      function setupCollapsibleSection(toggleBtnId, iconId, contentAreaId, initiallyExpanded = true) {
+        const toggleBtn = document.getElementById(toggleBtnId);
+        const icon = document.getElementById(iconId);
+        const contentArea = document.getElementById(contentAreaId);
+
+        if (!toggleBtn || !icon || !contentArea) {
+          console.warn('Collapsible section elements not found for:', toggleBtnId, iconId, contentAreaId);
+          return;
         }
+
+        contentArea.classList.add('collapsible-content-area');
+
+        function toggleSection() {
+          contentArea.classList.toggle('expanded');
+          icon.classList.toggle('rotated');
+          
+          function nudgeAfterContentAreaTransition() {
+            requestAnimationFrame(() => requestAnimationFrame(performFullStickyHeaderNudge));
+            contentArea.removeEventListener('transitionend', nudgeAfterContentAreaTransition);
+          }
+          contentArea.addEventListener('transitionend', nudgeAfterContentAreaTransition);
+        }
+
+        toggleBtn.addEventListener('click', toggleSection);
+
+        if (initiallyExpanded) {
+          contentArea.classList.add('expanded');
+          icon.classList.add('rotated');
+          initiallyExpandingSectionsCount++;
+
+          function onInitialExpansionEnd() {
+            initiallyExpandingSectionsCount--;
+            if (initiallyExpandingSectionsCount === 0 && !initialStickyNudgePerformed) {
+                performFullStickyHeaderNudge();
+            }
+            contentArea.removeEventListener('transitionend', onInitialExpansionEnd);
+          }
+          contentArea.addEventListener('transitionend', onInitialExpansionEnd);
+
+        } else {
+          contentArea.classList.remove('expanded');
+          icon.classList.remove('rotated');
+        }
+      }
+
+      // Setup Style Section
+      setupCollapsibleSection('style-section-toggle-btn', 'style-section-toggle-icon', 'style-section-content-area', true);
+
+      // Setup Palette & Materials Section
+      setupCollapsibleSection('palette-materials-section-toggle-btn', 'palette-materials-section-toggle-icon', 'palette-materials-section-content-area', true);
+      // === End of Collapsible Sections JS ===
+
+      // Fallback: If no sections were set to initially expand with a transition, 
+      // or if their transitions completed synchronously (e.g. duration 0), 
+      // perform the nudge now if it hasn't happened.
+      if (initiallyExpandingSectionsCount === 0 && !initialStickyNudgePerformed) {
+        // console.log('No initial transitions detected or they completed synchronously. Performing sticky nudge immediately.');
+        performFullStickyHeaderNudge();
       }
 
       // === New JS for Material Selection and Save Button State ===
@@ -747,72 +850,6 @@
       // Initialize button state on page load
       updateSaveButtonState();
       // === End of New JS ===
-
-      // === JS for Collapsible Sections ===
-      function setupCollapsibleSection(toggleBtnId, iconId, contentAreaId, initiallyExpanded = true) {
-        const toggleBtn = document.getElementById(toggleBtnId);
-        const icon = document.getElementById(iconId);
-        const contentArea = document.getElementById(contentAreaId);
-
-        if (!toggleBtn || !icon || !contentArea) {
-          console.warn('Collapsible section elements not found for:', toggleBtnId, iconId, contentAreaId);
-          return;
-        }
-
-        // Add the base class for CSS transitions
-        contentArea.classList.add('collapsible-content-area');
-
-        function toggleSection() {
-          contentArea.classList.toggle('expanded');
-          icon.classList.toggle('rotated');
-          // ensureContent9StickyBehavior(); // REMOVE direct call
-
-          // Nudge after the transition of the content area has ended
-          function nudgeAfterContentAreaTransition() {
-            requestAnimationFrame(() => requestAnimationFrame(ensureContent9StickyBehavior)); // Wrap in double rAF
-            contentArea.removeEventListener('transitionend', nudgeAfterContentAreaTransition); // Self-remove listener
-          }
-          contentArea.addEventListener('transitionend', nudgeAfterContentAreaTransition);
-        }
-
-        toggleBtn.addEventListener('click', toggleSection);
-
-        // Set initial state
-        if (initiallyExpanded) {
-          contentArea.classList.add('expanded');
-          icon.classList.add('rotated');
-
-          // If this is the main style section content area, nudge .content9 & jiggle scroll after its initial expansion
-          if (contentAreaId === 'style-section-content-area') {
-            function onStyleSectionInitiallyExpanded() {
-              requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                  ensureContent9StickyBehavior(); // Nudge .content9
-
-                  // Try to jiggle scroll position of bottom-sheet to force sticky re-evaluation
-                  const bottomSheet = document.querySelector('.bottom-sheet');
-                  if (bottomSheet) {
-                    bottomSheet.scrollTop = bottomSheet.scrollTop;
-                    // console.log('Bottom sheet scroll position jiggled post initial style section expansion');
-                  }
-                });
-              });
-              contentArea.removeEventListener('transitionend', onStyleSectionInitiallyExpanded);
-            }
-            contentArea.addEventListener('transitionend', onStyleSectionInitiallyExpanded);
-          }
-        } else {
-          contentArea.classList.remove('expanded');
-          icon.classList.remove('rotated');
-        }
-      }
-
-      // Setup Style Section
-      setupCollapsibleSection('style-section-toggle-btn', 'style-section-toggle-icon', 'style-section-content-area', true);
-
-      // Setup Palette & Materials Section
-      setupCollapsibleSection('palette-materials-section-toggle-btn', 'palette-materials-section-toggle-icon', 'palette-materials-section-content-area', true);
-      // === End of Collapsible Sections JS ===
 
     });
   </script>
@@ -870,29 +907,6 @@
           <img class="dropdown-icon" src="dropdown-icon0.svg" alt="Dropdown icon" id="style-section-toggle-icon" />
         </button>
       </div>
-      <!-- Palette & Materials Header -->
-      <div class="content9">
-        <div class="content3">
-          <h2 class="section-title">Palette & Materials</h2>
-        </div>
-        <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
-          <div class="content10">
-            <div class="save-material">
-              <img class="icon4" src="icon3.svg" alt="Save icon" />
-              <span class="label">Save</span>
-            </div>
-          </div>
-        </button>
-        <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
-          <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
-        </button>
-      </div>
-      
-      <!-- Progress Section -->
-      <section class="progress-section" aria-label="Progress">
-        <!-- (No divider here) -->
-      </section>
-
       <!-- Style Selection Section (Content Only) -->
       <section class="style-section" aria-label="Style selection details">
         <!-- Style Options -->
@@ -920,7 +934,7 @@
                   <div class="container">
                     <div class="state-layer">
                         <img class="icon" src="icon0.svg" alt="Soft Neutrals (selected)" />
-                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="soft-neutrals">Soft Neutrals</div>
@@ -1095,6 +1109,26 @@
           </article>
         </div>
       </section>
+
+      <!-- Palette & Materials Header -->
+      <div class="sticky-header-wrapper">
+        <div class="content9">
+          <div class="content3">
+            <h2 class="section-title">Palette & Materials</h2>
+          </div>
+          <button class="button" aria-label="Save changes" id="save-materials-btn" disabled>
+            <div class="content10">
+              <div class="save-material">
+                <img class="icon4" src="icon3.svg" alt="Save icon" />
+                <span class="label">Save</span>
+              </div>
+            </div>
+          </button>
+          <button class="dropdown-button" aria-label="Toggle palette options" id="palette-materials-section-toggle-btn">
+            <img class="dropdown-icon2" src="dropdown-icon1.svg" alt="Dropdown icon" id="palette-materials-section-toggle-icon" />
+          </button>
+        </div>
+      </div>
 
       <!-- Palette & Materials Section (Content Only) -->
       <section class="palette-materials-section" aria-label="Palette and materials details">
